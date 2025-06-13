@@ -183,15 +183,31 @@ class Translation:
         original_lines = paragraph.original.split('\n')
         translation_lines = translation.strip().split('\n')
         if len(translation_lines) < len(original_lines):
-            # Filter out empty lines and add proper spacing
+            # Analyze original structure to preserve paragraph spacing
             cleaned_lines = []
+            
+            # Find non-empty lines in original text
+            original_non_empty = []
+            for i, line in enumerate(original_lines):
+                if line.strip():
+                    original_non_empty.append(i)
+            
+            # Find non-empty lines in translation
+            translation_non_empty = []
             for line in translation_lines:
                 line = line.strip()
                 if line:
-                    if cleaned_lines:  # Add empty line between non-empty lines
+                    translation_non_empty.append(line)
+            
+            # If we have the same number of non-empty lines, preserve original spacing
+            if len(translation_non_empty) == len(original_non_empty):
+                trans_idx = 0
+                for i in original_non_empty:
+                    while len(cleaned_lines) < i:
                         cleaned_lines.append("")
-                    cleaned_lines.append(line)
-            translation = '\n'.join(cleaned_lines)
+                    cleaned_lines.append(translation_non_empty[trans_idx])
+                    trans_idx += 1
+                translation = '\n'.join(cleaned_lines)
         
         paragraph.translation = translation.strip()
         paragraph.engine_name = self.translator.name
