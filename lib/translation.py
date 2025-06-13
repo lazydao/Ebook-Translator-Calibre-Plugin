@@ -178,6 +178,19 @@ class Translation:
                 temp = ''.join([char for char in translation])
             translation = temp
         translation = self.glossary.restore(translation)
+        
+        # Optimize translation format
+        original_lines = paragraph.original.split('\n')
+        translation_lines = translation.strip().split('\n')
+        if len(translation_lines) < len(original_lines):
+            cleaned_lines = []
+            for i, line in enumerate(translation_lines):
+                if i > 0 and translation_lines[i-1].strip() and line.strip():
+                    cleaned_lines.append('')
+                cleaned_lines.append(line.strip())
+            cleaned_lines = [line for line in cleaned_lines if line]
+            translation = '\n'.join(cleaned_lines)
+        
         paragraph.translation = translation.strip()
         paragraph.engine_name = self.translator.name
         paragraph.target_lang = self.translator.get_target_lang()
