@@ -179,35 +179,20 @@ class Translation:
             translation = temp
         translation = self.glossary.restore(translation)
         
-        # Optimize translation format
-        original_lines = paragraph.original.split('\n')
-        translation_lines = translation.strip().split('\n')
-        if len(translation_lines) < len(original_lines):
-            # Analyze original structure to preserve paragraph spacing
-            cleaned_lines = []
-            
-            # Find non-empty lines in original text
-            original_non_empty = []
-            for i, line in enumerate(original_lines):
-                if line.strip():
-                    original_non_empty.append(i)
-            
-            # Find non-empty lines in translation
-            translation_non_empty = []
-            for line in translation_lines:
-                line = line.strip()
-                if line:
-                    translation_non_empty.append(line)
-            
-            # If we have the same number of non-empty lines, preserve original spacing
-            if len(translation_non_empty) == len(original_non_empty):
-                trans_idx = 0
-                for i in original_non_empty:
-                    while len(cleaned_lines) < i:
-                        cleaned_lines.append("")
-                    cleaned_lines.append(translation_non_empty[trans_idx])
-                    trans_idx += 1
-                translation = '\n'.join(cleaned_lines)
+        # 对结果进行格式化处理：清理空格行并在非空连续行之间添加空行
+        lines = translation.strip().split('\n')
+        processed_lines = []
+
+        for line in lines:
+            cleaned_line = line.strip()
+            if cleaned_line == "":
+                continue
+            processed_lines.append(cleaned_line)
+            processed_lines.append("")
+        
+        if len(processed_lines) > 0:
+            processed_lines.pop()
+        translation = '\n'.join(processed_lines)
         
         paragraph.translation = translation.strip()
         paragraph.engine_name = self.translator.name
