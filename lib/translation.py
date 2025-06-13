@@ -183,12 +183,14 @@ class Translation:
         original_lines = paragraph.original.split('\n')
         translation_lines = translation.strip().split('\n')
         if len(translation_lines) < len(original_lines):
+            # Filter out empty lines and add proper spacing
             cleaned_lines = []
-            for i, line in enumerate(translation_lines):
-                if i > 0 and translation_lines[i-1].strip() and line.strip():
-                    cleaned_lines.append('')
-                cleaned_lines.append(line.strip())
-            cleaned_lines = [line for line in cleaned_lines if line]
+            for line in translation_lines:
+                line = line.strip()
+                if line:
+                    if cleaned_lines:  # Add empty line between non-empty lines
+                        cleaned_lines.append("")
+                    cleaned_lines.append(line)
             translation = '\n'.join(cleaned_lines)
         
         paragraph.translation = translation.strip()
