@@ -75,6 +75,15 @@ class EngineWorker(QObject):
                     self.result.emit(text)
                     time.sleep(0.05)
             else:
+                def insert_blank_between_nonempty(lines):
+                    result = []
+                    for line in lines:
+                        if line.strip():
+                            result.append(line)
+                    return result
+
+                lines = translation.split('\n')
+                translation = '\n\n'.join(insert_blank_between_nonempty(lines))
                 self.clear.emit()
                 self.result.emit(translation)
             self.complete.emit()
