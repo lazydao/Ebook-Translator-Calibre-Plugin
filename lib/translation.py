@@ -178,6 +178,18 @@ class Translation:
                 temp = ''.join([char for char in translation])
             translation = temp
         translation = self.glossary.restore(translation)
+        # --- BEGIN: Ensure consistent paragraph separators when merging translations. ---
+        if self.translator.merge_enabled:
+            sep = self.translator.separator
+            # Count the actual number of paragraphs (excluding empty paragraphs).
+            orig_parts = [p for p in paragraph.original.split(sep) if p.strip() != '']
+            trans_parts_sep = [p for p in translation.split(sep) if p.strip() != '']
+            if len(trans_parts_sep) < len(orig_parts):
+                # Try using single line breaks to separate.
+                trans_parts_n = [p for p in translation.split('\n') if p.strip() != '']
+                if len(trans_parts_n) == len(orig_parts):
+                    translation = sep.join(trans_parts_n)
+        # --- END ---
         paragraph.translation = translation.strip()
         paragraph.engine_name = self.translator.name
         paragraph.target_lang = self.translator.get_target_lang()
