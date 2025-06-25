@@ -244,9 +244,26 @@ class PageElement(Element):
     def _create_new_element(
             self, name, content='', copy_attrs=True, excluding_attrs=[]):
         # Copy the namespaces from the original namespaces to the new ones.
-        namespaces = ' '.join(
-            'xmlns%s="%s"' % ('' if name is None else ':' + name, value)
-            for name, value in self.element.nsmap.items())
+        # `name` is the local tag name of the new element to be created.
+        # `self.element.nsmap` contains prefixes and URIs from the original element's scope.
+        # If a prefix in `self.element.nsmap` is identical to `name`,
+        # creating an xmlns attribute like `xmlns:name="uri"` on an element `<name>`
+        # would result in `<name xmlns:name="uri">...</name>`, which is invalid XML.
+
+        namespaces_str_parts = []
+        for ns_prefix_in_map, ns_uri_in_map in self.element.nsmap.items():
+            if ns_prefix_in_map == name:
+                # Skip this namespace declaration to prevent invalid XML:
+                # <tag_name xmlns:tag_name="uri_value">
+                continue
+
+            # Format the prefix string for the xmlns attribute
+            # (e.g., "" for default namespace, ":prefix" for others)
+            xmlns_attr_prefix_str = '' if ns_prefix_in_map is None else ':' + ns_prefix_in_map
+            namespaces_str_parts.append(f'xmlns{xmlns_attr_prefix_str}="{ns_uri_in_map}"')
+
+        namespaces = ' '.join(namespaces_str_parts)
+
         new_element = etree.XML('<{0} {1}>{2}</{0}>'.format(
             name, namespaces, trim(content)))
         # Preserve all attributes from the original element.
