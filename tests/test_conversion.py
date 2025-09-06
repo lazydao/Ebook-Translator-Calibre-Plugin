@@ -117,6 +117,92 @@ class TestConversionWorker(unittest.TestCase):
         self.assertEqual(True, arguments.get('log_is_file'))
         self.assertIs(self.icon, arguments.get('icon'))
 
+class TestLangCodeRegression(unittest.TestCase):
+    @patch(module_name + '.get_element_handler')
+    @patch(module_name + '.get_translation')
+    @patch(module_name + '.get_translator')
+    def test_export_with_mixed_engine_labels(
+            self, mock_get_translator, mock_get_translation,
+            mock_get_element_handler):
+        from pathlib import Path
+        from ..engines.base import Base
+        from ..lib.conversion import convert_item
+        from ..lib.element import get_element_handler as real_get_element_handler
+
+        captured = {}
+
+        def fake_get_element_handler(placeholder, separator, direction):
+            handler = real_get_element_handler(placeholder, separator, direction)
+            original = handler.set_translation_lang
+
+            def wrapped(lang):
+                captured['lang'] = lang
+                original(lang)
+
+            handler.set_translation_lang = wrapped
+            return handler
+
+        mock_get_element_handler.side_effect = fake_get_element_handler
+
+        translator = Mock()
+        translator.name = 'engineB'
+        translator.placeholder = Base.placeholder
+        translator.separator = Base.separator
+        translator.concurrency_limit = 1
+        translator.request_interval = 0
+        translator.request_attempt = 1
+        translator.request_timeout = 1
+        translator.merge_enabled = False
+        translator.set_source_lang = Mock()
+        translator.set_target_lang = Mock()
+        translator.get_iso639_target_code = Mock(return_value='de-DE')
+        mock_get_translator.return_value = translator
+
+        class DummyTranslation:
+            def set_batch(self, batch):
+                pass
+
+            def set_callback(self, cb):
+                self.cb = cb
+
+            def set_progress(self, progress):
+                pass
+
+            def handle(self, paragraphs):
+                data = [
+                    ('Hallo', 'engineA', 'de'),
+                    ('Welt', 'engineB', 'de-DE'),
+                ]
+                for p, info in zip(paragraphs, data):
+                    text, engine_name, lang = info
+                    p.translation = text
+                    p.engine_name = engine_name
+                    p.target_lang = lang
+                    self.cb(p)
+
+        mock_get_translation.return_value = DummyTranslation()
+
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            input_path = tmpdir / 'sample.srt'
+            output_path = tmpdir / 'out.srt'
+            input_path.write_text(
+                '1\n00:00:00,000 --> 00:00:01,000\nHello\n\n'
+                '2\n00:00:01,000 --> 00:00:02,000\nWorld\n')
+
+            convert_item(
+                'title', str(input_path), str(output_path), 'English',
+                'German', False, False, 'srt', 'utf-8', 'auto', 'de',
+                lambda *a, **k: None)
+
+            self.assertTrue(output_path.exists())
+            content = output_path.read_text()
+            self.assertIn('Hallo', content)
+            self.assertIn('Welt', content)
+            self.assertEqual('de', captured.get('lang'))
+
 
     @patch(module_name + '.open')
     @patch(module_name + '.open_path')
