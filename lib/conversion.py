@@ -188,7 +188,8 @@ def extract_book(input_path, encoding):
 
 def convert_item(
         ebook_title, input_path, output_path, source_lang, target_lang,
-        cache_only, is_batch, format, encoding, direction, notification):
+        cache_only, is_batch, format, encoding, direction, target_lang_code,
+        notification):
     """The following parameters need attention:
     :cache_only: Only use the translation which exists in the cache.
     :notification: It is automatically added by arbitrary_n.
@@ -199,8 +200,7 @@ def convert_item(
 
     element_handler = get_element_handler(
         translator.placeholder, translator.separator, direction)
-    element_handler.set_translation_lang(
-        translator.get_iso639_target_code(target_lang))
+    element_handler.set_translation_lang(target_lang_code)
 
     merge_length = str(element_handler.get_merge_length())
     _encoding = ''
@@ -276,7 +276,7 @@ class ConversionWorker:
                 'convert_item',
                 (ebook.title, input_path, output_path, ebook.source_lang,
                  ebook.target_lang, cache_only, is_batch, ebook.input_format,
-                 ebook.encoding, ebook.target_direction)),
+                 ebook.encoding, ebook.target_direction, ebook.lang_code)),
             description=(_('[{} > {}] Translating "{}"').format(
                 ebook.source_lang, ebook.target_lang, ebook.title)))
         self.working_jobs[job] = (ebook, output_path)
