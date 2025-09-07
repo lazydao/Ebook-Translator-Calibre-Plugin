@@ -118,6 +118,18 @@ class TestConversionWorker(unittest.TestCase):
         self.assertIs(self.icon, arguments.get('icon'))
 
 class TestLangCodeRegression(unittest.TestCase):
+    def setUp(self):
+        self.gui = Mock()
+        self.icon = Mock()
+        self.worker = ConversionWorker(self.gui, self.icon)
+        self.worker.db = Mock()
+        self.worker.api = Mock()
+
+        self.ebook = Mock(Ebook)
+        self.job = Mock()
+        self.worker.working_jobs = {
+            self.job: (self.ebook, str(Path('/path/to/test.epub')))}
+
     @patch(module_name + '.get_element_handler')
     @patch(module_name + '.get_translation')
     @patch(module_name + '.get_translator')
